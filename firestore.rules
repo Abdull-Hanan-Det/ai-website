@@ -1,0 +1,170 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 0: Global Safety Net (Default-Deny Catch-All)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Hardened Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'abdullhanan212@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerifiedUser() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Validation Blueprint for Inquiry (/inquiries/{inquiryId})
+    // Adheres verbatim to firebase-blueprint.json constraints
+    function isValidInquiry(data) {
+      return data.keys().hasAll([
+        'authorUid',
+        'name',
+        'email',
+        'projectType',
+        'message',
+        'status',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'authorUid',
+        'name',
+        'email',
+        'projectType',
+        'message',
+        'status',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.authorUid is string &&
+      data.authorUid.size() >= 1 &&
+      data.authorUid.size() <= 128 &&
+      data.authorUid.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.name is string &&
+      data.name.size() >= 2 &&
+      data.name.size() <= 100 &&
+      data.email is string &&
+      data.email.size() >= 5 &&
+      data.email.size() <= 150 &&
+      data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$') &&
+      data.projectType is string &&
+      data.projectType.size() >= 2 &&
+      data.projectType.size() <= 120 &&
+      data.message is string &&
+      data.message.size() >= 15 &&
+      data.message.size() <= 2000 &&
+      data.status is string &&
+      (
+        data.status == 'received' ||
+        data.status == 'in_review' ||
+        data.status == 'replied' ||
+        data.status == 'closed'
+      ) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint for AdminRecord (/admins/{adminId})
+    function isValidAdminRecord(data) {
+      return data.keys().hasAll(['uid', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'createdAt']) &&
+        data.uid is string &&
+        data.uid.size() >= 1 &&
+        data.uid.size() <= 128 &&
+        data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.createdAt is timestamp;
+    }
+
+    // Collection: /inquiries/{inquiryId}
+    match /inquiries/{inquiryId} {
+      // Single-document read: PII restricted strictly to owner or admin
+      allow get: if isVerifiedUser() &&
+        isValidId(inquiryId) &&
+        (existing().authorUid == request.auth.uid || isAdmin());
+
+      // List query: Enforces owner check or bootstrapped admin without any get()/exists() calls
+      allow list: if isVerifiedUser() &&
+        (existing().authorUid == request.auth.uid || isBootstrappedAdmin());
+
+      // Create: Must be verified user, valid ID, valid schema, authorUid == request.auth.uid, initial status == 'received', server timestamps
+      allow create: if isVerifiedUser() &&
+        isValidId(inquiryId) &&
+        isValidInquiry(incoming()) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().status == 'received' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      // Update: Must start with validation helper, enforce immutable fields, terminal state locking, and action-based affectedKeys
+      allow update: if isVerifiedUser() &&
+        isValidId(inquiryId) &&
+        isValidInquiry(incoming()) &&
+        incoming().authorUid == existing().authorUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          // Action 1: Owner edits message or projectType while status is not terminal ('closed')
+          (
+            existing().authorUid == request.auth.uid &&
+            existing().status != 'closed' &&
+            incoming().status == existing().status &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['projectType', 'message', 'updatedAt'])
+          ) ||
+          // Action 2: Admin updates inquiry status
+          (
+            isAdmin() &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+        );
+
+      // Delete: Restricted to owner (while not closed) or admin
+      allow delete: if isVerifiedUser() &&
+        isValidId(inquiryId) &&
+        ((existing().authorUid == request.auth.uid && existing().status != 'closed') || isAdmin());
+    }
+
+    // Collection: /admins/{adminId}
+    match /admins/{adminId} {
+      allow get: if isVerifiedUser() &&
+        isValidId(adminId) &&
+        (request.auth.uid == adminId || isBootstrappedAdmin());
+
+      allow list: if isBootstrappedAdmin();
+
+      allow create: if isBootstrappedAdmin() &&
+        isValidId(adminId) &&
+        isValidAdminRecord(incoming()) &&
+        incoming().uid == adminId &&
+        incoming().createdAt == request.time;
+
+      allow update: if false;
+
+      allow delete: if isBootstrappedAdmin() && isValidId(adminId);
+    }
+  }
+}

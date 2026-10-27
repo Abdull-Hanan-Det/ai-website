@@ -91,7 +91,8 @@ export const PORTFOLIO_CONFIG = {
     github: 'https://github.com/abdull-hanan',
     email: 'mailto:abdullhanan212@gmail.com',
     emailAddress: 'abdullhanan212@gmail.com',
-    whatsapp: 'https://wa.me/10000000000?text=Hi%20Abdull%20Hanan%2C%20I%20would%20like%20to%20discuss%20an%20AI%20automation%20project.',
+    whatsappNumber: '0305-3859437',
+    whatsapp: 'https://wa.me/923053859437?text=Hi%20Abdull%20Hanan%2C%20I%20would%20like%20to%20discuss%20an%20AI%20automation%20project.',
   },
 
   navLinks: [

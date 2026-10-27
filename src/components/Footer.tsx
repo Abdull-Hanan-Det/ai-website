@@ -109,7 +109,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenDeployModal }) => {
                   className="text-[#94A3B8] hover:text-[#F8FAFC] inline-flex items-center gap-2 transition-colors"
                 >
                   <MessageSquare className="w-3.5 h-3.5 text-[#06B6D4]" aria-hidden="true" />
-                  <span>WhatsApp Direct Link</span>
+                  <span>WhatsApp ({PORTFOLIO_CONFIG.socials.whatsappNumber})</span>
                   <ArrowUpRight className="w-3.5 h-3.5 text-[#c0c1ff]" aria-hidden="true" />
                 </a>
               </li>

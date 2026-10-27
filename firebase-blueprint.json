@@ -1,0 +1,98 @@
+{
+  "entities": {
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "A project automation inquiry submitted by an authenticated user via the portfolio contact section.",
+      "type": "object",
+      "properties": {
+        "authorUid": {
+          "type": "string",
+          "description": "The Firebase Auth UID of the user who submitted the inquiry.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the person submitting the inquiry.",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Verified contact email address of the sender.",
+          "minLength": 5,
+          "maxLength": 150
+        },
+        "projectType": {
+          "type": "string",
+          "description": "Selected AI automation service or project category.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "message": {
+          "type": "string",
+          "description": "Detailed description of the automation workflow or project scope.",
+          "minLength": 15,
+          "maxLength": 2000
+        },
+        "status": {
+          "type": "string",
+          "description": "Lifecycle status of the inquiry.",
+          "enum": ["received", "in_review", "replied", "closed"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the inquiry was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the inquiry was last updated."
+        }
+      },
+      "required": [
+        "authorUid",
+        "name",
+        "email",
+        "projectType",
+        "message",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Trusted administrator membership document.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "The Firebase Auth UID of the administrator.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the admin record was created."
+        }
+      },
+      "required": ["uid", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/inquiries/{inquiryId}": {
+      "schema": { "$ref": "#/entities/Inquiry" },
+      "description": "Stores client project inquiries with PII isolation restricted to the inquiry author and verified administrators."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Lookup collection of administrator UIDs."
+    }
+  }
+}

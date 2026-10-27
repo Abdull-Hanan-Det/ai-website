@@ -14,6 +14,7 @@ import { WorkProcessSection } from './components/WorkProcessSection';
 import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
 import { DeploymentModal } from './components/DeploymentModal';
+import { FirebaseProvider } from './context/FirebaseContext';
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<string>('home');
@@ -45,25 +46,27 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#090A0F] text-[#F8FAFC] flex flex-col selection:bg-[#6366F1]/30 selection:text-white">
-      <Navbar activeSection={activeSection} onHireMeClick={handleHireMeClick} />
+    <FirebaseProvider>
+      <div className="min-h-screen bg-[#090A0F] text-[#F8FAFC] flex flex-col selection:bg-[#6366F1]/30 selection:text-white">
+        <Navbar activeSection={activeSection} onHireMeClick={handleHireMeClick} />
 
-      <main className="flex-grow">
-        <HeroSection onSelectServiceForContact={setSelectedProjectType} />
-        <AboutSection onOpenDeployModal={() => setDeployModalOpen(true)} />
-        <ServicesSection onSelectService={setSelectedProjectType} />
-        <ProjectsSection onSelectProjectInquiry={setSelectedProjectType} />
-        <SkillsSection />
-        <WorkProcessSection />
-        <ContactSection preselectedProjectType={selectedProjectType} />
-      </main>
+        <main className="flex-grow">
+          <HeroSection onSelectServiceForContact={setSelectedProjectType} />
+          <AboutSection onOpenDeployModal={() => setDeployModalOpen(true)} />
+          <ServicesSection onSelectService={setSelectedProjectType} />
+          <ProjectsSection onSelectProjectInquiry={setSelectedProjectType} />
+          <SkillsSection />
+          <WorkProcessSection />
+          <ContactSection preselectedProjectType={selectedProjectType} />
+        </main>
 
-      <Footer onOpenDeployModal={() => setDeployModalOpen(true)} />
+        <Footer onOpenDeployModal={() => setDeployModalOpen(true)} />
 
-      <DeploymentModal
-        isOpen={deployModalOpen}
-        onClose={() => setDeployModalOpen(false)}
-      />
-    </div>
+        <DeploymentModal
+          isOpen={deployModalOpen}
+          onClose={() => setDeployModalOpen(false)}
+        />
+      </div>
+    </FirebaseProvider>
   );
 }
